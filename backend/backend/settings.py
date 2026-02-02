@@ -33,8 +33,6 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "*"
 ]
-
-
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -46,7 +44,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "nested_admin",
-    "django_crontab",   # ✅ ADD THIS
+    "django_crontab",  
     "authentication",
     "chat",
     "gpt",
@@ -159,11 +157,12 @@ CSRF_COOKIE_SAMESITE = "None"
 
 #  BYPASS AUTHENTICATION 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
 }
+
 
 # Cron jobs
 

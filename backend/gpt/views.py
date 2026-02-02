@@ -16,7 +16,7 @@ def gpt_root_view(request):
     return JsonResponse({"message": "GPT endpoint works!"})
 
 
-# ---------- TITLE ----------
+
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -26,7 +26,6 @@ def get_title(request):
     return JsonResponse({"content": title})
 
 
-# ---------- SIMPLE ANSWER ----------
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -38,7 +37,7 @@ def get_answer(request):
     )
 
 
-# ---------- FULL CONVERSATION ----------
+
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])

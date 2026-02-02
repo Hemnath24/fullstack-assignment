@@ -5,25 +5,26 @@ from django.db import models
 from authentication.models import CustomUser
 
 
+
+# Role Model
+
 class Role(models.Model):
     name = models.CharField(max_length=20, blank=False, null=False, default="user")
 
     def __str__(self):
         return self.name
 
+
+# Conversation Model
+
 class Conversation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    # Title shown in UI
     title = models.CharField(max_length=100, blank=False, null=False, default="Mock title")
-
-    # Automatically generated summary (Task 1 & 3)
     summary = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
-    # Currently active version of conversation
     active_version = models.ForeignKey(
         "Version",
         null=True,
@@ -32,32 +33,24 @@ class Conversation(models.Model):
         related_name="current_version_conversations",
     )
 
-    # Soft delete support
     deleted_at = models.DateTimeField(null=True, blank=True)
-
-    # Owner of conversation
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
 
-    # Used in Django Admin
     def version_count(self):
         return self.versions.count()
 
     version_count.short_description = "Number of versions"
 
- 
     def generate_summary(self):
         if not self.active_version:
             return ""
 
         messages = self.active_version.messages.all()
         full_text = " ".join(message.content for message in messages)
-
-        # Limit summary length
         return full_text[:200] + "..." if len(full_text) > 200 else full_text
-
 
     def save(self, *args, **kwargs):
         self.summary = self.generate_summary()
@@ -65,6 +58,7 @@ class Conversation(models.Model):
 
 
 
+# Version Model
 class Version(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -95,14 +89,12 @@ class Version(models.Model):
         return f"Version of `{self.conversation.title}` with no root message yet"
 
 
+# Message Model
+
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
     content = models.TextField(blank=False, null=False)
-
-    # Role determines who sent the message
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     version = models.ForeignKey(
@@ -114,7 +106,6 @@ class Message(models.Model):
     class Meta:
         ordering = ["created_at"]
 
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.version.conversation.save()
@@ -122,25 +113,29 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.role}: {self.content[:20]}..."
 
+
 class UploadedFile(models.Model):
     """
     Stores uploaded files with SHA-256 hash
-    to prevent duplicate uploads.
+    and tracks uploader for RBAC
     """
 
     file = models.FileField(upload_to="uploads/")
     filename = models.CharField(max_length=255)
 
-    # Used to detect duplicate files
+    # Ownership (REQUIRED for RBAC)
+    uploaded_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="uploaded_files",
+    )
+
+    # Duplicate detection
     file_hash = models.CharField(max_length=64, unique=True)
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        """
-        Automatically calculate file hash
-        and store filename on first save.
-        """
         if not self.file_hash and self.file:
             hasher = hashlib.sha256()
             for chunk in self.file.chunks():
